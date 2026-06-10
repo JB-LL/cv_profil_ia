@@ -8,7 +8,7 @@ from extractor import extraire_texte, extraire_contacts  # ← ajout extraire_co
 try:
     nlp = spacy.load("fr_core_news_sm")
 except OSError:
-    print("📥 Téléchargement du modèle de langue français requis...")
+    print(" Téléchargement du modèle de langue français requis...")
     os.system("python -m spacy download fr_core_news_sm")
     nlp = spacy.load("fr_core_news_sm")
 
@@ -23,7 +23,7 @@ def main():
 
     if not os.path.exists(DOSSIER_CV):
         os.makedirs(DOSSIER_CV)
-        print(f"📁 Dossier '{DOSSIER_CV}' créé. Ajoute tes CV dedans et relance.")
+        print(f" Dossier '{DOSSIER_CV}' créé. Ajoute tes CV dedans et relance.")
         return
 
     fichiers = []
@@ -31,10 +31,10 @@ def main():
         fichiers.extend(glob.glob(os.path.join(DOSSIER_CV, ext)))
 
     if not fichiers:
-        print(f"⚠️ Aucun CV trouvé dans le dossier '{DOSSIER_CV}'.")
+        print(f" Aucun CV trouvé dans le dossier '{DOSSIER_CV}'.")
         return
 
-    print(f"📚 Ingestion locale de {len(fichiers)} documents...")
+    print(f" Ingestion locale de {len(fichiers)} documents...")
 
     noms_candidats = []
     cv_nettoyes = []
@@ -49,14 +49,18 @@ def main():
             contacts_candidats.append(extraire_contacts(brut))  # ← nouveau
 
     if not cv_nettoyes:
-        print("❌ Aucun texte n'a pu être extrait des fichiers trouvés ou tous les documents sont vides.")
+        print(" Aucun texte n'a pu être extrait des fichiers trouvés ou tous les documents sont vides.")
         return
 
-    print("✅ Indexation terminée. Prêt pour les requêtes dynamiques.")
+    print(" Indexation terminée. Prêt pour les requêtes dynamiques.")
+    
+    # Vectorisation unique — calculée une seule fois
+    vectoriseur = TfidfVectorizer(analyzer='word', ngram_range=(1, 2))
+    matrice_cv = vectoriseur.fit_transform(cv_nettoyes)
 
     while True:
         print("\n" + "="*60)
-        requete = input("🕵️ Entrez vos mots-clés (ex: 'Stage Cyber Python') [ou 'q' pour quitter] : ")
+        requete = input(" Entrez vos mots-clés (ex: 'Stage Cyber Python') [ou 'q' pour quitter] : ")
         print("="*60)
 
         if requete.lower() == 'q':
@@ -68,11 +72,9 @@ def main():
 
         requete_propre = nettoyer_texte(requete)
         if not requete_propre.strip():
-            print("⚠️ Tous vos mots-clés sont des mots vides (stop words) en français. Saisissez des termes plus spécifiques.")
+            print(" Tous vos mots-clés sont des mots vides (stop words) en français. Saisissez des termes plus spécifiques.")
             continue
 
-        vectoriseur = TfidfVectorizer(analyzer='word', ngram_range=(1, 2))
-        matrice_cv = vectoriseur.fit_transform(cv_nettoyes)
         vecteur_requete = vectoriseur.transform([requete_propre])
 
         scores = cosine_similarity(vecteur_requete, matrice_cv).flatten()
@@ -88,7 +90,7 @@ def main():
         ]
 
         if resultats_valides:
-            print(f"\n📊 --- CLASSEMENT DES CANDIDATS POUR : '{requete}' ---")
+            print(f"\n --- CLASSEMENT DES CANDIDATS POUR : '{requete}' ---")
 
             col_rang     = 6
             col_candidat = max(len(c) for _, c, _, _ in resultats_valides)
