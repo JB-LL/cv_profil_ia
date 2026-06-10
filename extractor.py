@@ -4,6 +4,7 @@ import fitz  # PyMuPDF
 import pytesseract
 from PIL import Image
 import io
+import re
 
 # Gestion de la portabilité de Tesseract
 if platform.system() == "Windows":
@@ -47,6 +48,27 @@ def extraire_texte(chemin_fichier):
             return pytesseract.image_to_string(Image.open(chemin_fichier), lang='fra')
         except Exception as e:
             print(f"❌ Erreur Image ({os.path.basename(chemin_fichier)}) : {e}")
-            return ""
-            
+            return ""    
     return ""
+
+def extraire_contacts(texte):
+    """Extrait email, téléphone et LinkedIn depuis le texte brut d'un CV"""
+    
+    # Email
+    emails = re.findall(r'[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}', texte)
+    
+    # Téléphone (formats FR : 06, 07, +33, avec espaces/tirets/points)
+    telephones = re.findall(
+        r'(?:(?:\+|00)33[\s.-]?|0)[1-9](?:[\s.-]?\d{2}){4}', texte
+    )
+    
+    # LinkedIn
+    linkedin = re.findall(
+        r'(?:linkedin\.com/in/|linkedin\.com/pub/)([a-zA-Z0-9\-]+)', texte
+    )
+    
+    return {
+        "email":     emails[0] if emails else None,
+        "telephone": telephones[0] if telephones else None,
+        "linkedin":  linkedin[0] if linkedin else None,
+    }
