@@ -1,0 +1,6 @@
+# Ignorer le dossier contenant les CV privés
+cv_folder/
+
+# Ignorer les fichiers temporaires Python et caches
+__pycache__/
+*.pyc
