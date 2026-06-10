@@ -27,7 +27,7 @@ def main():
         return
 
     fichiers = []
-    for ext in ('*.txt', '*.pdf', '*.png', '*.jpg', '*.jpeg'):
+    for ext in ('*.txt', '*.pdf', '*.png', '*.jpg', '*.jpeg', '*.docx'):
         fichiers.extend(glob.glob(os.path.join(DOSSIER_CV, ext)))
 
     if not fichiers:
