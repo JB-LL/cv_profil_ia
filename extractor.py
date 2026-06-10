@@ -5,6 +5,7 @@ import pytesseract
 from PIL import Image
 import io
 import re
+from docx import Document
 
 # Gestion de la portabilité de Tesseract
 if platform.system() == "Windows":
@@ -42,13 +43,22 @@ def extraire_texte(chemin_fichier):
         except Exception as e:
             print(f"❌ Erreur PDF ({os.path.basename(chemin_fichier)}) : {e}")
             return ""
-            
+
     elif ext in ['png', 'jpg', 'jpeg']:
         try:
             return pytesseract.image_to_string(Image.open(chemin_fichier), lang='fra')
         except Exception as e:
             print(f"❌ Erreur Image ({os.path.basename(chemin_fichier)}) : {e}")
-            return ""    
+            return ""   
+
+    elif ext == 'docx':
+        try:
+            doc = Document(chemin_fichier)
+            return "\n".join([para.text for para in doc.paragraphs])
+        except Exception as e:
+            print(f"❌ Erreur DOCX ({os.path.basename(chemin_fichier)}) : {e}")
+            return "" 
+        
     return ""
 
 def extraire_contacts(texte):
