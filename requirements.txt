@@ -3,3 +3,4 @@ pytesseract
 pillow
 scikit-learn
 spacy
+python-docx
