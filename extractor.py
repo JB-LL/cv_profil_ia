@@ -1,9 +1,6 @@
 import os
-import platform
 import fitz
 import easyocr
-from PIL import Image
-import io
 
 # Initialisation unique du lecteur OCR (chargé une seule fois)
 print("🔄 Chargement du moteur OCR...")
