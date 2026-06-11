@@ -4,7 +4,7 @@ import os
 
 DEPENDANCES = [
     "pymupdf",
-    "pytesseract",
+    "easyocr",
     "Pillow",
     "spacy",
     "scikit-learn",
