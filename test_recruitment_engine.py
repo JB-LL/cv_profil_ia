@@ -11,8 +11,7 @@ class TestRecruitmentEngine(unittest.TestCase):
         """Test basic French text cleaning and key word retention."""
         texte_brut = "Un developpeur Python tres experimente avec Django."
         texte_propre = nettoyer_texte(texte_brut)
-        
-        # Check that common stopwords are removed and core keywords are lowercased and retained
+
         self.assertNotIn("un", texte_propre.split())
         self.assertNotIn("avec", texte_propre.split())
         self.assertTrue("python" in texte_propre or "developpeur" in texte_propre or "django" in texte_propre)
@@ -32,10 +31,13 @@ class TestRecruitmentEngine(unittest.TestCase):
     @patch('extractor.fitz.open')
     def test_extraire_texte_pdf_native(self, mock_fitz_open):
         """Test native PDF text extraction when text is found."""
-        # Setup mock document and pages
         mock_doc = MagicMock()
         mock_page = MagicMock()
-        mock_page.get_text.return_value = "Compétences : Python, Flask, SQL, Django, Angular, Cyber, Machine Learning, Data Science, et beaucoup d'autres compétences techniques nécessaires pour ce test."
+        mock_page.get_text.return_value = (
+            "Compétences : Python, Flask, SQL, Django, Angular, Cyber, "
+            "Machine Learning, Data Science, et beaucoup d'autres compétences "
+            "techniques nécessaires pour ce test."
+        )
         mock_doc.__iter__.return_value = [mock_page]
         mock_fitz_open.return_value = mock_doc
 
@@ -43,28 +45,24 @@ class TestRecruitmentEngine(unittest.TestCase):
         self.assertIn("Python", extracted)
         self.assertIn("Django", extracted)
 
-    @patch('extractor.fitz.open')
-    @patch('extractor.pytesseract.image_to_string')
-    @patch('extractor.Image.open')
-    def test_extraire_texte_pdf_ocr(self, mock_image_open, mock_ocr, mock_fitz_open):
+    @patch('extractor.lecteur_ocr')   # ← décoré en dernier = 1er paramètre
+    @patch('extractor.fitz.open')     # ← décoré en premier = 2e paramètre
+    def test_extraire_texte_pdf_ocr(self, mock_fitz_open, mock_lecteur_ocr):
         """Test OCR-based PDF text extraction when no native text is found."""
-        # Setup mock page with no native text
         mock_doc = MagicMock()
         mock_page = MagicMock()
-        mock_page.get_text.return_value = "   "  # Empty native text
-        
-        # Mock rendering of the page as image
+        mock_page.get_text.return_value = "   "
+
         mock_pixmap = MagicMock()
         mock_pixmap.tobytes.return_value = b"fake_png_bytes"
         mock_page.get_pixmap.return_value = mock_pixmap
         mock_doc.__iter__.return_value = [mock_page]
         mock_fitz_open.return_value = mock_doc
 
-        # Mock OCR output
-        mock_ocr.return_value = "Texte extrait par OCR"
+        mock_lecteur_ocr.readtext.return_value = ["Texte extrait par OCR"]
 
         extracted = extraire_texte("scanned_cv.pdf")
-        self.assertEqual(extracted.strip(), "Texte extrait par OCR")
+        self.assertIn("Texte extrait par OCR", extracted)
 
 if __name__ == '__main__':
     unittest.main()
