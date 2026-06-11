@@ -1,6 +1,7 @@
 pymupdf
-pytesseract
+easyocr
 pillow
 scikit-learn
 spacy
 python-docx
+tkinterdnd2
