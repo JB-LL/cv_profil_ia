@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Moteur de Recrutement</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: 'Segoe UI', sans-serif; background: #f0f2f5; color: #2c2c2c; }
+
+        header {
+            background: #2c3e50; color: white;
+            padding: 20px 40px;
+            font-size: 22px; font-weight: bold;
+        }
+
+        .container { max-width: 1100px; margin: 30px auto; padding: 0 20px; }
+
+        .card {
+            background: white; border-radius: 10px;
+            padding: 25px; margin-bottom: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        }
+
+        .card h2 { font-size: 15px; color: #555; margin-bottom: 15px; text-transform: uppercase; letter-spacing: 1px; }
+
+        input[type="text"] {
+            width: 100%; padding: 10px 14px;
+            border: 1px solid #ddd; border-radius: 6px;
+            font-size: 14px; margin-bottom: 12px;
+        }
+
+        .row { display: flex; gap: 12px; align-items: center; }
+
+        button {
+            padding: 10px 22px; border: none; border-radius: 6px;
+            font-size: 14px; font-weight: bold; cursor: pointer;
+            white-space: nowrap;
+        }
+
+        .btn-blue  { background: #3498db; color: white; }
+        .btn-green { background: #27ae60; color: white; }
+        .btn-blue:hover  { background: #2980b9; }
+        .btn-green:hover { background: #219150; }
+
+        .statut {
+            font-size: 13px; color: #888;
+            margin-top: 10px; min-height: 20px;
+        }
+        .statut.ok  { color: #27ae60; }
+        .statut.err { color: #e74c3c; }
+
+        .spinner {
+            display: inline-block; width: 14px; height: 14px;
+            border: 2px solid #ddd; border-top-color: #3498db;
+            border-radius: 50%; animation: spin 0.7s linear infinite;
+            margin-right: 6px; vertical-align: middle;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        table { width: 100%; border-collapse: collapse; font-size: 14px; }
+        th { background: #2c3e50; color: white; padding: 12px 15px; text-align: left; }
+        td { padding: 10px 15px; border-bottom: 1px solid #eee; }
+        tr:nth-child(even) { background: #f8f9ff; }
+        tr:hover { background: #eef4ff; }
+
+        .score { font-weight: bold; color: #2c3e50; }
+        .empty { text-align: center; color: #aaa; padding: 40px; }
+
+        input[type="number"] {
+            width: 70px; padding: 10px;
+            border: 1px solid #ddd; border-radius: 6px; font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+
+<header>🔍 Moteur de Recrutement Local</header>
+
+<div class="container">
+
+    <!-- Chargement CV -->
+    <div class="card">
+        <h2>📁 Dossier des CV</h2>
+        <div class="row">
+            <input type="text" id="dossier" placeholder="Cliquez sur Parcourir pour sélectionner un dossier" style="margin:0; flex:1" readonly>
+            <button class="btn-blue" onclick="choisirDossier()">📁 Parcourir</button>
+            <button class="btn-green" onclick="indexer()">Charger</button>
+        </div>
+        <div class="statut" id="statut-cv">Aucun CV chargé</div>
+    </div>
+
+    <!-- Recherche -->
+    <div class="card">
+        <h2>🕵️ Recherche</h2>
+        <div class="row">
+            <input type="text" id="requete" placeholder="Ex: Python cybersécurité Paris" style="margin:0; flex:1"
+                   onkeydown="if(event.key==='Enter') rechercher()">
+            <input type="number" id="nb_max" value="20" min="1" max="500">
+            <button class="btn-green" onclick="rechercher()">Rechercher</button>
+        </div>
+        <div class="statut" id="statut-recherche"></div>
+    </div>
+
+    <!-- Résultats -->
+    <div class="card">
+        <h2>📊 Résultats</h2>
+        <div id="tableau-container">
+            <div class="empty">Lance une recherche pour voir les résultats</div>
+        </div>
+    </div>
+
+</div>
+
+<script>
+async function choisirDossier() {
+    const statut = document.getElementById("statut-cv")
+    statut.className = "statut"
+    statut.innerHTML = '<span class="spinner"></span> Ouverture de l\'explorateur...'
+
+    const res  = await fetch("/choisir-dossier")
+    const data = await res.json()
+
+    if (data.dossier) {
+        document.getElementById("dossier").value = data.dossier
+        indexer()
+    } else {
+        statut.className = "statut err"
+        statut.textContent = "Aucun dossier sélectionné"
+    }
+}
+
+async function indexer() {
+    const dossier = document.getElementById("dossier").value.trim()
+    if (!dossier) return
+
+    const statut = document.getElementById("statut-cv")
+    statut.className = "statut"
+    statut.innerHTML = '<span class="spinner"></span> Indexation en cours...'
+
+    const res  = await fetch("/indexer", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ dossier })
+    })
+    const data = await res.json()
+
+    if (data.erreur) {
+        statut.className = "statut err"
+        statut.textContent = "❌ " + data.erreur
+    } else {
+        statut.className = "statut ok"
+        statut.textContent = "✅ " + data.message
+    }
+}
+
+async function rechercher() {
+    const requete = document.getElementById("requete").value.trim()
+    const nb_max  = document.getElementById("nb_max").value
+    if (!requete) return
+
+    const statut = document.getElementById("statut-recherche")
+    statut.className = "statut"
+    statut.innerHTML = '<span class="spinner"></span> Recherche en cours...'
+
+    const res  = await fetch("/rechercher", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ requete, nb_max })
+    })
+    const data = await res.json()
+
+    if (data.erreur) {
+        statut.className = "statut err"
+        statut.textContent = "❌ " + data.erreur
+        return
+    }
+
+    statut.className = "statut ok"
+    statut.textContent = `✅ ${data.resultats.length} résultat(s)`
+
+    const container = document.getElementById("tableau-container")
+
+    if (data.resultats.length === 0) {
+        container.innerHTML = '<div class="empty">Aucun CV ne correspond</div>'
+        return
+    }
+
+    let html = `<table>
+        <tr>
+            <th>Rang</th>
+            <th>Candidat</th>
+            <th>Correspondance</th>
+            <th>Contact</th>
+        </tr>`
+
+    for (const r of data.resultats) {
+        html += `<tr>
+            <td>${r.rang}</td>
+            <td>${r.candidat}</td>
+            <td class="score">${r.score}%</td>
+            <td>${r.contact}</td>
+        </tr>`
+    }
+
+    html += "</table>"
+    container.innerHTML = html
+}
+</script>
+
+</body>
+</html>
