@@ -1,5 +1,4 @@
 import os
-import sys
 import tkinter as tk
 from tkinter import ttk, filedialog, messagebox
 import threading
@@ -22,6 +21,7 @@ class App(tk.Tk):
         self.dossier_cv = None
         self.fichiers_deposes = []
         self.noms_candidats = []
+        self.chemins_candidats = []
         self.cv_nettoyes = []
         self.contacts_candidats = []
         self.vectoriseur = None
@@ -127,6 +127,7 @@ class App(tk.Tk):
         # Couleurs alternées
         self.tableau.tag_configure("pair",   background="#ffffff")
         self.tableau.tag_configure("impair", background="#f0f4ff")
+        self.tableau.bind("<Double-1>", self._ouvrir_cv)
 
     def _activer_drag_drop(self):
         """Active le glisser-déposer si tkinterdnd2 est disponible"""
@@ -188,6 +189,7 @@ class App(tk.Tk):
             if brut.strip():
                 self.cv_nettoyes.append(nettoyer_texte(brut))
                 self.noms_candidats.append(os.path.basename(chemin))
+                self.chemins_candidats.append(chemin)
                 self.contacts_candidats.append(extraire_contacts(brut))
 
         if self.cv_nettoyes:
@@ -239,6 +241,10 @@ class App(tk.Tk):
         if not resultats:
             self.label_statut_recherche.config(text="Aucun résultat", fg="#e74c3c")
             return
+        
+        self.index_chemins = {
+            os.path.basename(c): c for c in self.chemins_candidats
+        }   
 
         for rang, nom, score, contacts in resultats:
             email = contacts.get("email") or ""
@@ -251,6 +257,19 @@ class App(tk.Tk):
 
         self.label_statut_recherche.config(
             text=f"{len(resultats)} résultat(s) trouvé(s)", fg="#27ae60")
+
+    def _ouvrir_cv(self, event):
+        """Ouvre le CV double-cliqué avec l'application native du système."""
+        selection = self.tableau.selection()
+        if not selection:
+            return
+        nom = self.tableau.item(selection[0], "values")[1]
+        chemin = getattr(self, "index_chemins", {}).get(nom)
+        if chemin and os.path.exists(chemin):
+            os.startfile(chemin)
+        else:
+            messagebox.showerror("Erreur", f"Fichier introuvable :\n{chemin}")
+
 
 if __name__ == "__main__":
     app = App()
